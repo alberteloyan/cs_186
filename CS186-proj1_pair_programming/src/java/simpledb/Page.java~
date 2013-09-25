@@ -1,6 +1,5 @@
 package simpledb;
-//expansion of Page class to include an iterator function so as to utilize it in our heapfileiterator class
-import java.util.Iterator;
+
 /**
  * Page is the interface used to represent pages that are resident in the
  * BufferPool.  Typically, DbFiles will read and write pages from disk.

@@ -75,7 +75,13 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-
+		if(!isPageInCache(pid)) {
+			if (isBufferFull())
+				evictPage();
+			DbFile dbf = Database.getCatalog().getDbFile(pid.getTableId());
+			cachedPages.put(pid.hashCode(), dbf.readPage(pid));
+			pageAccessStack.addFirst(pid.hashCode());
+		}
         return this.cachedPages.get(pid.hashCode());
     }
 
