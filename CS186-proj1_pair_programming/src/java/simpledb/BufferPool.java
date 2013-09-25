@@ -20,6 +20,9 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 	public int pageNum;
+    public HashMap<Integer, Page> cachedPages;
+    public LinkedList<Integer> pageAccessStack;
+
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -28,6 +31,20 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
         this.pageNum = numPages;
+        this.cachedPages = new HashMap<Integer, Page>();
+        this.pageAccessStack = new LinkedList<Integer>();
+    }
+
+    private boolean isBufferFull() {
+
+    }
+
+    private boolean isPageInCache(PageId pid) {
+
+    }
+
+    private void bumpPage(PageId pid) {
+
     }
 
     /**
