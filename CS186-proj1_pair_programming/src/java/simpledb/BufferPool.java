@@ -50,10 +50,10 @@ public class BufferPool {
     }
 
     private void bumpPage(PageId pid) {
-        if (pageAccessStack.contains(pid.hashCode())) {
-            
-            pageAccessStack.remove(pageAccessStack.indexOf(pid.hashCode()));
-            pageAccessStack.addFirst(pid.hashCode());
+        if (this.pageAccessStack.contains(pid.hashCode())) {
+
+            this.pageAccessStack.remove(pageAccessStack.indexOf(pid.hashCode()));
+            this.pageAccessStack.addFirst(pid.hashCode());
         }
     }
 
@@ -75,7 +75,8 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+
+        return this.cachedPages.get(pid.hashCode());
     }
 
     /**
