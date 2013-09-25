@@ -1,6 +1,7 @@
 package simpledb;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -36,15 +37,24 @@ public class BufferPool {
     }
 
     private boolean isBufferFull() {
-
+        if (this.pageAccessStack.size() == this.cachedPages.size()) {
+            return this.cachedPages.size() >= this.pageNum;
+        }
+        else {
+            return false;
+        }
     }
 
     private boolean isPageInCache(PageId pid) {
-
+        return this.cachedPages.containsKey(pid.hashCode());
     }
 
     private void bumpPage(PageId pid) {
+        if (this.pageAccessStack.contains(pid.hashCode())) {
 
+            this.pageAccessStack.remove(pageAccessStack.indexOf(pid.hashCode()));
+            this.pageAccessStack.addFirst(pid.hashCode());
+        }
     }
 
     /**
@@ -65,7 +75,8 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+
+        return this.cachedPages.get(pid.hashCode());
     }
 
     /**
