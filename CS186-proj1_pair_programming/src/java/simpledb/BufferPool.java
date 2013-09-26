@@ -21,8 +21,8 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 	public int pageNum;
-    public HashMap<Integer, Page> cachedPages;
-    public LinkedList<Integer> pageAccessStack;
+    public HashMap<Integer, Page> cache;
+    public LinkedList<Integer> pagesStack;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -32,13 +32,13 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
         this.pageNum = numPages;
-        this.cachedPages = new HashMap<Integer, Page>();
-        this.pageAccessStack = new LinkedList<Integer>();
+        this.cache = new HashMap<Integer, Page>();
+        this.pagesStack = new LinkedList<Integer>();
     }
 
     private boolean isBufferFull() {
-        if (this.pageAccessStack.size() == this.cachedPages.size()) {
-            return this.cachedPages.size() >= this.pageNum;
+        if (this.pagesStack.size() == this.cache.size()) {
+            return this.cache.size() >= this.pageNum;
         }
         else {
             return false;
@@ -46,14 +46,14 @@ public class BufferPool {
     }
 
     private boolean isPageInCache(PageId pid) {
-        return this.cachedPages.containsKey(pid.hashCode());
+        return this.cache.containsKey(pid.hashCode());
     }
 
     private void bumpPage(PageId pid) {
-        if (this.pageAccessStack.contains(pid.hashCode())) {
+        if (this.pagesStack.contains(pid.hashCode())) {
 
-            this.pageAccessStack.remove(pageAccessStack.indexOf(pid.hashCode()));
-            this.pageAccessStack.addFirst(pid.hashCode());
+            this.pagesStack.remove(pagesStack.indexOf(pid.hashCode()));
+            this.pagesStack.addFirst(pid.hashCode());
         }
     }
 
@@ -79,10 +79,10 @@ public class BufferPool {
 			if (isBufferFull())
 				evictPage();
 			DbFile dbf = Database.getCatalog().getDbFile(pid.getTableId());
-			cachedPages.put(pid.hashCode(), dbf.readPage(pid));
-			pageAccessStack.addFirst(pid.hashCode());
+			cache.put(pid.hashCode(), dbf.readPage(pid));
+			pagesStack.addFirst(pid.hashCode());
 		}
-        return this.cachedPages.get(pid.hashCode());
+        return this.cache.get(pid.hashCode());
     }
 
     /**

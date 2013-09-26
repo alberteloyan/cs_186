@@ -46,7 +46,7 @@ public class HeapFileIterator implements DbFileIterator {
         	HeapPageId hpId = new HeapPageId(this.fileId, currPageIndex++);
         	currPage = Database.getBufferPool().getPage(this.tranId, hpId, Permissions.READ_ONLY);
         	tupleIt = currPage.iterator();
-        	System.out.println("There are numPages = " + numPages + " and we are on " + (currPageIndex - 1));
+        	//System.out.println("There are numPages = " + numPages + " and we are on " + (currPageIndex - 1));
         	if(tupleIt.hasNext())
         		return true;
         }
@@ -90,6 +90,7 @@ public class HeapFileIterator implements DbFileIterator {
      */
     public void close() {
     	currPageIndex = 0;
+    	currPage = null;
     	tupleIt = null;
     }
 

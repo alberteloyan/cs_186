@@ -67,8 +67,10 @@ public class HeapFileIterator implements DbFileIterator {
      	if(tupleIt != null && tupleIt.hasNext()) {
      		 Tuple retTup = tupleIt.next();
      		 //System.out.println(retTup.toString());
-     		 return retTup;
-     		
+     		 if (retTup != null)
+     		 	return retTup;
+     		else
+     			throw new NoSuchElementException();
      	}
      	else
      		throw new NoSuchElementException();   
