@@ -8,10 +8,10 @@ public class HeapPageIterator implements Iterator<Tuple> {
     public int currentTuple;
 
     public HeapPageIterator(HeapPage page) {
-        System.out.print("Here");
+        //System.out.print("Here");
         this.page = page;
         this.currentTuple = 0;
-        this.numOfTuples = this.page.getNumEmptySlots();
+        this.numOfTuples = this.getNumTuples() - this.page.getNumEmptySlots();
     }
         
     public boolean hasNext() {
