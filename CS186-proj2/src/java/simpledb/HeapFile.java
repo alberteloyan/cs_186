@@ -91,6 +91,7 @@ public class HeapFile implements DbFile {
 		    fc.read(byteBuff, offset);
 		    HeapPageId retHPId = ((HeapPageId)pid);
 		    HeapPage retHP = new HeapPage(retHPId, byteBuff.array());
+            //fc.close();
 		    return retHP;
 		} catch (IOException error) {
 			System.out.println(error);
@@ -108,6 +109,7 @@ public class HeapFile implements DbFile {
         	ByteBuffer byteBuff = ByteBuffer.wrap(page.getPageData());
         	int bbuff = 4096 * page.getId().pageNumber();
         	fc.write(byteBuff, bbuff);
+            //fc.close();
         }
         catch (IOException ioe) {
         	System.out.println("IOException was hit " + ioe.toString());

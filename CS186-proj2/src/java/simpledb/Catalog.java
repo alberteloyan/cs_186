@@ -127,7 +127,14 @@ public class Catalog {
 
     public Iterator<Integer> tableIdIterator() {
         // some code goes here
-        return null;
+        List<Integer> tableIDList = new ArrayList<Integer>();
+
+        for (Integer key : fileId.keySet()) {
+            tableIDList.add(key);
+        }
+
+        Iterator<Integer> it = tableIDList.iterator();
+        return it;
     }
 
     public String getTableName(int id) {
