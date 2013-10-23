@@ -56,6 +56,7 @@ public class Join extends Operator {
      * */
     public String getJoinField2Name() {
         // some code goes here
+        //return(String) dbi1.getTupleDesc().getFieldName(this.jp.getField2());or
         return (String) dbi2.getTupleDesc().getFieldName(this.jp.getField1());
     }
 

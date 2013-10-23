@@ -3,6 +3,7 @@ package simpledb;
 import java.io.*;
 import java.util.*;
 
+
 /**
  * BufferPool manages the reading and writing of pages into memory from
  * disk. Access methods call into it to retrieve pages, and it fetches
@@ -21,8 +22,7 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 	public int pageNum;
-    public HashMap<Integer, Page> cache;
-    public LinkedList<Integer> pagesStack;
+    public HashMap<PageId, Page> cache;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -32,28 +32,21 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
         this.pageNum = numPages;
-        this.cache = new HashMap<Integer, Page>();
-        this.pagesStack = new LinkedList<Integer>();
+        this.cache = new HashMap<PageId, Page>();
     }
 
     private boolean isBufferFull() {
-        if (this.pagesStack.size() == this.cache.size()) {
-            return this.cache.size() >= this.pageNum;
-        }
-        else {
-            return false;
-        }
+
+        return this.cache.size() >= this.pageNum;
     }
 
     private boolean isPageInCache(PageId pid) {
-        return this.cache.containsKey(pid.hashCode());
+        return this.cache.containsKey(pid);
     }
 
     private void bumpPage(PageId pid) {
-        if (this.pagesStack.contains(pid.hashCode())) {
-
-            this.pagesStack.remove(pagesStack.indexOf(pid.hashCode()));
-            this.pagesStack.addFirst(pid.hashCode());
+        if (this.cache.get(pid.hashCode()) != null) {
+            this.cache.remove(pid);
         }
     }
 
@@ -76,13 +69,16 @@ public class BufferPool {
         throws TransactionAbortedException, DbException {
         // some code goes here
 		if(!isPageInCache(pid)) {
-			if (isBufferFull())
-				evictPage();
+			if (this.isBufferFull()) {
+				this.evictPage();
+			}
 			DbFile dbf = Database.getCatalog().getDbFile(pid.getTableId());
-			cache.put(pid.hashCode(), dbf.readPage(pid));
-			pagesStack.addFirst(pid.hashCode());
+			Page page = dbf.readPage(pid);
+			page.markDirty(false, tid);
+			cache.put(pid, page);
+			
 		}
-        return this.cache.get(pid.hashCode());
+        return this.cache.get(pid);
     }
 
     /**
@@ -147,9 +143,12 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for proj1
+        //HeapPage hp = this.getPage(tid, t.getRecordId().getPageId());
+        HeapFile f = (HeapFile)Database.getCatalog().getDbFile(tableId);
+        HeapPage pg = (HeapPage)f.insertTuple(tid, t).get(0);
+        pg.markDirty(true, tid);
+        cache.put(pg.getId(), pg);
         
-        DbFile f = Database.getCatalog().getDbFile(tableId);
-    	f.insertTuple(tid, t);
     }
 
     /**
@@ -183,6 +182,11 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for proj1
+        //pull full set of keys from cache and flush each of them individually
+        //Set<PageId> ids = this.cache.keySet();
+        for(PageId id : this.cache.keySet()) {
+        	this.flushPage(id);
+        }
 
     }
 
@@ -193,7 +197,9 @@ public class BufferPool {
     */
     public synchronized void discardPage(PageId pid) {
         // some code goes here
-	// not necessary for proj1
+		// not necessary for proj1
+		this.cache.remove(pid);
+		
     }
 
     /**
@@ -203,6 +209,11 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for proj1
+        HeapPage pgf = (HeapPage)this.cache.get(pid);
+        if(pgf.isDirty() != null) {
+        	Database.getCatalog().getDbFile(pid.getTableId()).writePage(pgf);
+        }
+        
         
     }
 
@@ -211,6 +222,14 @@ public class BufferPool {
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for proj1
+        //Collection<Page> cachePages = this.cache.values();
+        
+        for(Page page : this.cache.values()) {
+        	if (page.isDirty() != null && tid.equals(page.isDirty())) {
+        		this.flushPage(page.getId());
+        	}
+        	
+        }
     }
 
     /**
@@ -220,6 +239,38 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for proj1
-    }
+        
+        for (PageId pid: this.cache.keySet()) {
+            Page p = this.cache.get(pid);
+            //System.out.println(p+ " " + pid);
+            
+            try {
+                this.flushPage(p.getId());
+                this.discardPage(pid);
+            } 
+            catch (IOException e) {
+            	System.out.println("IOException hit " + e.toString());
+            }
+            return;
+        }
+   	}
+        /*
+        HeapPage evictee = null;
+        HeapPage temp;
+        for (PageId id: this.cache.keySet()) {
+            temp = (HeapPage)this.cache.get(id);
+            if (evictee == null) {
+            	System.out.println("we are getting here though");
+                evictee = temp;
+            } else if (temp.getTid().getId() < evictee.getTid().getId()) {
+            	System.out.println(" we are getting here" + temp.getTid().getId());
+                evictee = temp;
+            }
+        }
+        
+        this.cache.remove(evictee.getId());
+        */
+   
+   
 
 }

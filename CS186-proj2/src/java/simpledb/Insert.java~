@@ -11,6 +11,7 @@ public class Insert extends Operator {
 	private DbIterator dbi;
 	private int tableid;
 	private TupleDesc td;
+	private boolean secondPass = true;
     /**
      * Constructor.
      * 
@@ -45,6 +46,7 @@ public class Insert extends Operator {
         // some code goes here
         super.open();
         this.dbi.open();
+        secondPass = false;
     }
 
     public void close() {
@@ -73,31 +75,35 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        Tuple returnInfo = null;
+        //Tuple returnInfo = null;
         int count = 0;
-        if(this.dbi.hasNext()) {
+        if(secondPass) {
+        	return null;
+        }
         	
-        	try {
-        		Database.getBufferPool().insertTuple(this.tid,this.tableid,this.dbi.next());
-        	}
-        	catch(TransactionAbortedException tae) {
-        		System.out.println("Transaction aborted " + tae.toString());
-        	}
-        	catch(DbException dbe) {
-        		System.out.println("DbException " + dbe.toString());
-        	}
-        	catch(IOException ioe) {
-        		System.out.println("IOException " + ioe.toString());
-        	}
-        	count++;
-        }
-        if (count > 0) {
-        	returnInfo = new Tuple(this.getTupleDesc());
-        	Field outputField = new IntField(count);
-        	returnInfo.setField(0,outputField);
-        }
-        
-        return returnInfo;
+		while(this.dbi.hasNext()) {
+		    	
+		    	try {
+		    		Database.getBufferPool().insertTuple(this.tid,this.dbi.next());
+		    	}
+		    	catch(TransactionAbortedException tae) {
+		    		System.out.println("Transaction aborted " + tae.toString());
+		    	}
+		    	catch(DbException dbe) {
+		    		System.out.println("DbException " + dbe.toString());
+		    	}
+		    	catch(IOException ioe) {
+		    		System.out.println("IOException " + ioe.toString());
+		    	}
+		    	count++;
+		}
+		    
+		Tuple returnInfo = new Tuple(this.getTupleDesc());
+		Field outputField = new IntField(count);
+		returnInfo.setField(0,outputField);
+		secondPass = true;
+		return returnInfo;
+ 
     }
 
     @Override

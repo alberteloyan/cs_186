@@ -74,7 +74,7 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        DbTable tableID = tableFile.get(name);
+        DbFile tableID = tableFile.get(name);
         if (tableID == null)
         	throw new NoSuchElementException();
         //System.out.println(tableID.getId());

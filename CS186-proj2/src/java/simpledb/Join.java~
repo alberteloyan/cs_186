@@ -6,40 +6,16 @@ import java.util.*;
  * The Join operator implements the relational join operation.
  */
 public class Join extends Operator {
-        
-        /**
-         * The predicate to use to join the children
-         */
-        private JoinPredicate p;
-                
-        /**
-         * Iterator for the left(outer) relation to join
-         */
-        private DbIterator child1;
-        
-        /**
-         * Iterator for the right(inner) relation to join
-         */
-        private DbIterator child2;
-        
-        /* 
-         * variables required for the fetchNext() method
-         */
-        
-        // keeps track if more tuples exist in the outer relation
-        private boolean moreOuterTuplesExist = true;
-        
-        // keeps track if next tuple of outer relation needs to be read
-        private boolean getNextOuterTuple = true;
-                
-        // stores the current tuple of the outer relation for the nested loop join
-        private Tuple outerTuple = null;
-        
-        // Hashmap for hash-join
-        private Map<Field, List<Tuple>> hashJoinMap;
-        
-        
+
+	private JoinPredicate jp;
+	private DbIterator dbi1;
+	private DbIterator dbi2;
+	private boolean oRotate = true;
+	private boolean contOn = true;
+	private Tuple oTuple;
     private static final long serialVersionUID = 1L;
+    
+
     /**
      * Constructor. Accepts to children to join and the predicate to join them
      * on
@@ -52,14 +28,15 @@ public class Join extends Operator {
      *            Iterator for the right(inner) relation to join
      */
     public Join(JoinPredicate p, DbIterator child1, DbIterator child2) {
-        this.p = p;
-        this.child1 = child1;
-        this.child2 = child2;
-
+        // some code goes here
+        this.jp = p;
+        this.dbi1 = child1;
+        this.dbi2 = child2;
     }
 
     public JoinPredicate getJoinPredicate() {
-        return p;
+        // some code goes here
+        return this.jp;
     }
 
     /**
@@ -68,10 +45,8 @@ public class Join extends Operator {
      *       alias or table name.
      * */
     public String getJoinField1Name() {
-        
-        String fieldName = child1.getTupleDesc().getFieldName(p.getField1());
-        return fieldName;
-        
+        // some code goes here
+        return (String) dbi1.getTupleDesc().getFieldName(this.jp.getField1());
     }
 
     /**
@@ -80,9 +55,8 @@ public class Join extends Operator {
      *       alias or table name.
      * */
     public String getJoinField2Name() {
-        
-        String fieldName = child2.getTupleDesc().getFieldName(p.getField1());
-        return fieldName;
+        // some code goes here
+        return (String) dbi2.getTupleDesc().getFieldName(this.jp.getField1());
     }
 
     /**
@@ -90,29 +64,32 @@ public class Join extends Operator {
      *      implementation logic.
      */
     public TupleDesc getTupleDesc() {
-        TupleDesc child1TD = child1.getTupleDesc();
-        TupleDesc child2TD = child2.getTupleDesc();
-        TupleDesc joinedTD = TupleDesc.merge(child1TD, child2TD);
-        return joinedTD;
+        // some code goes here
+        TupleDesc td1 = this.dbi1.getTupleDesc();
+        TupleDesc td2 = this.dbi2.getTupleDesc();
+        TupleDesc td3 = TupleDesc.merge(td1, td2);
+        return td3;
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-            super.open();
-        child1.open();
-        child2.open();
-        
+        // some code goes here
+        super.open();
+        this.dbi1.open();
+        this.dbi2.open();
     }
 
     public void close() {
-    super.close();
-        child1.close();
-        child2.close();
+        // some code goes here
+        super.close();
+        this.dbi1.close();
+        this.dbi2.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        child1.rewind();
-        child2.rewind();
+        // some code goes here
+        this.dbi1.rewind();
+        this.dbi2.rewind();
     }
 
     /**
@@ -134,70 +111,49 @@ public class Join extends Operator {
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-    
-       
+        // some code goes here
         // check if more outer tuples exist before iteration over outer relation
-        if(getNextOuterTuple) {
-                moreOuterTuplesExist = child1.hasNext();
-        }
-        
-        while(moreOuterTuplesExist){
-                if(getNextOuterTuple){
-                        outerTuple = child1.next();
-                }
-                        
-                while(child2.hasNext()){
-                        
-                        Tuple innerTuple = child2.next();
-                                                
-                        if(p.filter(outerTuple, innerTuple)){
-                                // join predicate match
-                                
-                                // still iterating over inner relation tuples, 
-                                // so do not get next outer relation tuple
-                                getNextOuterTuple = false;
-                                
-                                // create a new joined tuple
-                                Tuple joinedTuple = new Tuple(this.getTupleDesc());
-                                int index = 0;
-                                
-                                // fill joined tuple with contents of outer tuple and then inner tuple
-                                for(int i = 0; i < outerTuple.getTupleDesc().numFields(); i ++){
-                                        joinedTuple.setField(i, outerTuple.getField(i));
-                                        index++;
-                                }
-                                for(int j = index; j < joinedTuple.getTupleDesc().numFields(); j++){
-                                        joinedTuple.setField(j, innerTuple.getField(j-index));
-                                }
-                                
-                                return joinedTuple;
+		Tuple output = null;
+		if(oRotate) {
+			contOn = dbi1.hasNext();
+		}
+        while(contOn){
+        	if(oRotate){
+            	oTuple = dbi1.next();
+                }       
+                while(dbi2.hasNext()){
+					Tuple iTuple = dbi2.next();
+                    if(jp.filter(oTuple, iTuple)){
+                    	oRotate = false;
+                        output = new Tuple(this.getTupleDesc());
+                        int i = 0;
+                        for(; i < oTuple.getTupleDesc().numFields(); i ++){
+                        	output.setField(i, oTuple.getField(i));
                         }
+                        for(int j = i; j < output.getTupleDesc().numFields(); j++){
+                        	output.setField(j, iTuple.getField(j-i));
+                        }
+                        return output;
+                   	}
                 }
-                // finished iterating over all tuples in inner relation, so...
-                
-                // reset to get first tuple of inner relation, and
-                child2.rewind();
-                
-                // try to get next outer relation tuple
-                getNextOuterTuple = true;
-                moreOuterTuplesExist = child1.hasNext();
-                
+                dbi2.rewind();
+                oRotate = true; 
+                contOn = dbi1.hasNext();     
         }
         return null;
-                
     }
-    
-    
 
     @Override
     public DbIterator[] getChildren() {
-        return new DbIterator[] { this.child1, this.child2 };
+        // some code goes here
+        return new DbIterator[]{this.dbi1,this.dbi2};
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
-        this.child1 = children[0];
-        this.child2 = children[1];
+        // some code goes here
+        this.dbi1 = children[0];
+        this.dbi2 = children[1];
     }
 
 }

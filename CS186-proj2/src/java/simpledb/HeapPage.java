@@ -20,6 +20,7 @@ public class HeapPage implements Page {
     Tuple tuples[];
     int numSlots;
     TransactionId lastDirty = null;
+    TransactionId tid = null;
 	boolean dirty;
     byte[] oldData;
 
@@ -44,18 +45,17 @@ public class HeapPage implements Page {
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
-
-        // allocate and read the header slots of this page
         header = new byte[getHeaderSize()];
         for (int i=0; i<header.length; i++)
             header[i] = dis.readByte();
 
         try{
-            // allocate and read the actual records of this page
             tuples = new Tuple[numSlots];
-            for (int i=0; i<tuples.length; i++)
+            for (int i=0; i<tuples.length; i++) {
                 tuples[i] = readNextTuple(dis,i);
-        }catch(NoSuchElementException e){
+            }
+        }
+        catch(NoSuchElementException e){
             e.printStackTrace();
         }
         dis.close();
@@ -296,6 +296,7 @@ public class HeapPage implements Page {
 		}
 		else {
 			this.lastDirty = null;
+			this.tid = tid;
 		}
 		
     }
@@ -306,7 +307,13 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
 	// Not necessary for lab1
-        return this.lastDirty;      
+		return this.lastDirty;
+     
+    }
+    
+    public TransactionId getTid() {
+    	System.out.println("we got here" + this.tid);
+    	return this.tid;
     }
 
     /**

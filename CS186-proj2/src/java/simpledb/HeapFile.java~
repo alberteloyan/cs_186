@@ -104,6 +104,15 @@ public class HeapFile implements DbFile {
         // some code goes here
         // not necessary for proj1
         //MAY NOT BE NECESSARY FOR PROJ2
+        try {
+        	ByteBuffer byteBuff = ByteBuffer.wrap(page.getPageData());
+        	int bbuff = 4096 * page.getId().pageNumber();
+        	fc.write(byteBuff, bbuff);
+        }
+        catch (IOException ioe) {
+        	System.out.println("IOException was hit " + ioe.toString());
+        }
+        
     }
 
     /**
@@ -121,51 +130,52 @@ public class HeapFile implements DbFile {
         }
     }
 
+    // see DbFile.java for javadocs
     public ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        int pageNo;
-        List<Page> modifiedPg = new ArrayList<Page>();
-        
-        // check for empty slots for tuple insertion in the pages of this file
-        for(pageNo = 0; pageNo < numPages(); pageNo++){
-                PageId pid = new HeapPageId(this.getId(), pageNo);
-                
-                // access page from the BufferPool
-                HeapPage p = (HeapPage)Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
-                if(p.getNumEmptySlots() != 0){
-                        // found a page with at least one empty slot
-                        p.insertTuple(t);
-                        //p.markDirty(true, tid);
-                        modifiedPg.add(p);
-                        return (ArrayList<Page>)modifiedPg;
-                }
-                
+        // some code goes here
+        //return null;
+        // not necessary for proj1
+        //System.out.println("printing from insertTuple in Heapfile.java");
+        List<Page> insertedPgList = new ArrayList<Page>();
+        int i = 0;
+        //checking existing pages for empty slots
+        for( ; i < this.numPages(); i++) {
+        	PageId pid = new HeapPageId(this.uniqId, i);
+        	HeapPage hostPage = (HeapPage)Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+        	if(hostPage.getNumEmptySlots() > 0) {
+        		hostPage.insertTuple(t);
+        		hostPage.markDirty(true, tid);
+        		insertedPgList.add(hostPage);
+        		return (ArrayList<Page>) insertedPgList;
+        	}
         }
+        //creating new page since no open space was found in pages from memory
+        HeapPageId  insertedPgId = new HeapPageId(this.uniqId, i);
+        HeapPage insertedPg = new HeapPage(insertedPgId, HeapPage.createEmptyPageData());
+        insertedPg.insertTuple(t);
+        int pagesize = BufferPool.PAGE_SIZE;
         
-        // no page empty page found in the file
-        // create a new page, insert tuple in it, and append page to the end of the file
-        HeapPageId newPageId = new HeapPageId(getId(), pageNo);
-        HeapPage newPage = new HeapPage(newPageId, HeapPage.createEmptyPageData());
-        newPage.insertTuple(t);
-        //newPage.markDirty(true, tid);
         
-        // append new page to the end of the file
-        RandomAccessFile f = new RandomAccessFile(this.heapFileBacking, "rw");
-        f.seek(pageNo * BufferPool.PAGE_SIZE);
-        f.write(newPage.getPageData(), 0, BufferPool.PAGE_SIZE);
-        f.close();
         
-        modifiedPg.add(newPage);
-        return (ArrayList<Page>)modifiedPg;
+        RandomAccessFile raf = new RandomAccessFile(this.heapFileBacking, "rw");
+        raf.seek(pagesize * i);
+        raf.write(insertedPg.getPageData(), 0, pagesize);
+        raf.close();
+        insertedPgList.add(insertedPg);
+        return (ArrayList<Page>) insertedPgList;
     }
-    
 
     // see DbFile.java for javadocs
     public Page deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
-      HeapPage p = (HeapPage)Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
-      p.deleteTuple(t);
-      return p;
+        // some code goes here
+        //return null;
+        // not necessary for proj1
+        HeapPage delPg = (HeapPage)Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
+        delPg.deleteTuple(t);
+        delPg.markDirty(true,tid);
+        return delPg;
     }
 
     // see DbFile.java for javadocs

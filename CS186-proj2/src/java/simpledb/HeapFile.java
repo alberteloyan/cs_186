@@ -104,6 +104,15 @@ public class HeapFile implements DbFile {
         // some code goes here
         // not necessary for proj1
         //MAY NOT BE NECESSARY FOR PROJ2
+        try {
+        	ByteBuffer byteBuff = ByteBuffer.wrap(page.getPageData());
+        	int bbuff = 4096 * page.getId().pageNumber();
+        	fc.write(byteBuff, bbuff);
+        }
+        catch (IOException ioe) {
+        	System.out.println("IOException was hit " + ioe.toString());
+        }
+        
     }
 
     /**
@@ -127,6 +136,7 @@ public class HeapFile implements DbFile {
         // some code goes here
         //return null;
         // not necessary for proj1
+        //System.out.println("printing from insertTuple in Heapfile.java");
         List<Page> insertedPgList = new ArrayList<Page>();
         int i = 0;
         //checking existing pages for empty slots
@@ -135,6 +145,7 @@ public class HeapFile implements DbFile {
         	HeapPage hostPage = (HeapPage)Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
         	if(hostPage.getNumEmptySlots() > 0) {
         		hostPage.insertTuple(t);
+        		hostPage.markDirty(true, tid);
         		insertedPgList.add(hostPage);
         		return (ArrayList<Page>) insertedPgList;
         	}
@@ -163,6 +174,7 @@ public class HeapFile implements DbFile {
         // not necessary for proj1
         HeapPage delPg = (HeapPage)Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
         delPg.deleteTuple(t);
+        delPg.markDirty(true,tid);
         return delPg;
     }
 

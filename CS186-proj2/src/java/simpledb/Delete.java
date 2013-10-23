@@ -1,5 +1,5 @@
 package simpledb;
-
+import java.io.*;
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
  * them from the table they belong to.
@@ -10,6 +10,7 @@ public class Delete extends Operator {
 	private TransactionId tid;
 	private DbIterator dbi;
 	private TupleDesc td;
+	private boolean secondPass = true;
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -35,6 +36,7 @@ public class Delete extends Operator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        secondPass = false;
         super.open();
         this.dbi.open();
     }
@@ -61,27 +63,33 @@ public class Delete extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        Tuple returnInfo = null;
+        //Tuple returnInfo = null;
         int count = 0;
-        while(this.dbi.hasNext()) {
+        if(secondPass) {
+        	return null;
+        }
         	
-        	try {
-        		Database.getBufferPool().deleteTuple(this.tid,this.dbi.next());
-        	}
-        	catch(TransactionAbortedException tae) {
-        		System.out.println("Transaction aborted " + tae.toString());
-        	}
-        	catch(DbException dbe) {
-        		System.out.println("DbException " + dbe.toString());
-        	}
-        	count++;
-        }
-        if (count > 0) {
-        	returnInfo = new Tuple(this.getTupleDesc());
-        	Field outputField = new IntField(count);
-        	returnInfo.setField(0,outputField);
-        }
-        return returnInfo;
+		while(this.dbi.hasNext()) {
+		    	
+		    	try {
+		    		Database.getBufferPool().deleteTuple(this.tid,this.dbi.next());
+		    	}
+		    	catch(TransactionAbortedException tae) {
+		    		System.out.println("Transaction aborted " + tae.toString());
+		    	}
+		    	catch(DbException dbe) {
+		    		System.out.println("DbException " + dbe.toString());
+		    	}
+		    	
+		    	count++;
+		}
+		    
+		Tuple returnInfo = new Tuple(this.getTupleDesc());
+		Field outputField = new IntField(count);
+		returnInfo.setField(0,outputField);
+		secondPass = true;
+		return returnInfo;
+ 
     }
 
     @Override
