@@ -156,8 +156,6 @@ public class HeapFile implements DbFile {
         insertedPg.insertTuple(t);
         int pagesize = BufferPool.PAGE_SIZE;
         
-        
-        
         RandomAccessFile raf = new RandomAccessFile(this.heapFileBacking, "r");
        	try{
        		raf.seek(pagesize * i);

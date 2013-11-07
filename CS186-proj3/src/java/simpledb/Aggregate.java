@@ -35,28 +35,27 @@ public class Aggregate extends Operator {
      *            The aggregation operator to use
      */
     public Aggregate(DbIterator child, int afield, int gfield, Aggregator.Op aop) {
-		// some code goes here
-		this.dbi = child;
-		this.aggfield = afield;
-		this.groupfield = gfield;
-		this.operator = aop;
-		//creating the aggregators for either int or string types
-
+        // some code goes here
+        this.dbi = child;
+        this.aggfield = afield;
+        this.groupfield = gfield;
+        this.operator = aop;
+        //creating the aggregators for either int or string types
         if (this.dbi.getTupleDesc().getFieldType(this.aggfield) == Type.INT_TYPE) {
-        	if (this.groupfield != -1) {
-        		aggregate = new IntegerAggregator(this.groupfield, this.dbi.getTupleDesc().getFieldType(this.groupfield), this.aggfield, this.operator);
-        	}
-        	else {
-        		aggregate = new IntegerAggregator(this.groupfield, null, this.aggfield, this.operator);
-        	}
+            if (this.groupfield != -1) {
+                aggregate = new IntegerAggregator(this.groupfield, this.dbi.getTupleDesc().getFieldType(this.groupfield), this.aggfield, this.operator);
+            }
+            else {
+                aggregate = new IntegerAggregator(this.groupfield, null, this.aggfield, this.operator);
+            }
         } 
         else{
-        	if (this.groupfield != -1) {
-        		aggregate = new IntegerAggregator(this.groupfield, this.dbi.getTupleDesc().getFieldType(this.groupfield), this.aggfield, this.operator);
-        	}
-        	else {
-        		aggregate = new IntegerAggregator(this.groupfield, null, this.aggfield, this.operator);
-        	}
+            if (this.groupfield != -1) {
+                aggregate = new StringAggregator(this.groupfield, this.dbi.getTupleDesc().getFieldType(this.groupfield), this.aggfield, this.operator);
+            }
+            else {
+                aggregate = new StringAggregator(this.groupfield, null, this.aggfield, this.operator);
+            }
         }
     }
 
