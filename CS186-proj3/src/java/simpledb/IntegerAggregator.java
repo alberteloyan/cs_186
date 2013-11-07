@@ -1,0 +1,173 @@
+package simpledb;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.List;
+/**
+ * Knows how to compute some aggregate over a set of IntFields.
+ */
+public class IntegerAggregator implements Aggregator {
+
+    private static final long serialVersionUID = 1L;
+    private int gbf;
+    private Type gbft;
+    private int afield;
+    private Op what;
+    
+    private String groupName = "";
+    private String tupName = "";
+    private static Map<Field,Field> aggset;
+    private Map<Field, Integer> sums = new HashMap<Field, Integer>();
+    private Map<Field, Integer> counts = new HashMap<Field, Integer>();
+
+    /**
+     * Aggregate constructor
+     * 
+     * @param gbfield
+     *            the 0-based index of the group-by field in the tuple, or
+     *            NO_GROUPING if there is no grouping
+     * @param gbfieldtype
+     *            the type of the group by field (e.g., Type.INT_TYPE), or null
+     *            if there is no grouping
+     * @param afield
+     *            the 0-based index of the aggregate field in the tuple
+     * @param what
+     *            the aggregation operator
+     */
+
+    public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
+        // some code goes here
+        this.gbf = gbfield;
+        this.gbft = gbfieldtype;
+        this.afield = afield;
+        this.what = what;
+        aggset = new HashMap<Field,Field>();
+    }
+
+    /**
+     * Merge a new tuple into the aggregate, grouping as indicated in the
+     * constructor
+     * 
+     * @param tup
+     *            the Tuple containing an aggregate field and a group-by field
+     */
+    public void mergeTupleIntoGroup(Tuple tup) {
+        // some code goes here
+        Field tupField;
+        tupName = tup.getTupleDesc().getFieldName(this.afield);
+        //String groupName = "";
+        
+        if(this.gbf != -1) {
+        	tupField = tup.getField(this.gbf);
+        	groupName = tup.getTupleDesc().getFieldName(this.gbf);
+        }
+        else {
+        	tupField = new IntField(-1);
+        }
+        
+        IntField currVal = (IntField)aggset.get(tupField);
+        IntField aggField = (IntField)tup.getField(this.afield);
+        
+        
+        if(this.what.equals(Op.SUM)) {
+        	int sum = 0; 
+        	if(aggset.get(tupField) != null){
+        		sum = currVal.getValue();
+        	}
+        	sum += aggField.getValue();
+        	Field newsum = new IntField(sum);
+        	aggset.put(tupField, newsum);
+        }
+        
+        if(this.what.equals(Op.COUNT)) {
+        	int count = 1;
+        	if(aggset.get(tupField) != null) {
+        		count = currVal.getValue() + 1;
+        	}
+        	Field newcount = new IntField(count);
+        	aggset.put(tupField, newcount);
+        }
+        
+        if(this.what.equals(Op.AVG)) {
+        	int avg = 0;
+        	int sum = 0;
+        	int count = 0;
+        	if(aggset.get(tupField) != null) {
+        		sum = sums.get(tupField) + aggField.getValue();
+        		count = counts.get(tupField) + 1;
+        		counts.put(tupField, count);
+        		sums.put(tupField, sum);
+        		avg = sum / count;
+      		}
+        	else {
+        		counts.put(tupField, 1);
+        		sums.put(tupField, aggField.getValue());
+        		avg = aggField.getValue();
+        	}
+        	Field newavg = new IntField(avg);
+        	aggset.put(tupField, newavg);
+        }
+        
+        if(this.what.equals(Op.MAX)) {
+        	int max = aggField.getValue();
+        	if(aggset.get(tupField) != null) {
+        		if (aggField.getValue() < currVal.getValue()) {
+        			max = currVal.getValue();
+        		}
+        	}
+        	Field newmax = new IntField(max);
+        	aggset.put(tupField, newmax);
+        }
+        
+        if(this.what.equals(Op.MIN)) {
+        	int min = aggField.getValue();
+        	if(aggset.get(tupField) != null) {
+        		if (aggField.getValue() > currVal.getValue()) {
+        			min = currVal.getValue();
+        		}
+        	}
+        	Field newmin = new IntField(min);
+        	aggset.put(tupField, newmin);
+        }
+    }
+
+    /**
+     * Create a DbIterator over group aggregate results.
+     * 
+     * @return a DbIterator whose tuples are the pair (groupVal, aggregateVal)
+     *         if using group, or a single (aggregateVal) if no grouping. The
+     *         aggregateVal is determined by the type of aggregate specified in
+     *         the constructor.
+     */
+    public DbIterator iterator() {
+        List<Tuple> myList = new ArrayList<Tuple> ();
+        TupleDesc myTD;
+        Type[] tdType;
+        String[] tdString;
+        if(this.gbf == -1){
+        	tdType = new Type[] {Type.INT_TYPE};
+        	tdString = new String[] {tupName};
+        	myTD = new TupleDesc(tdType,tdString);
+            Tuple tdGroup = new Tuple(myTD);
+            tdGroup.setField(0, aggset.get(new IntField(-1)));
+			myList.add(tdGroup);
+            return new TupleIterator(myTD, myList);      
+        } 
+        else{
+        	tdType = new Type[] {this.gbft, Type.INT_TYPE};
+        	tdString = new String[] {this.groupName, this.tupName};
+			myTD = new TupleDesc(tdType, tdString);
+            Set<Field> aggKeys = aggset.keySet();
+            for(Field key : aggKeys){
+            	Tuple tdGroup = new Tuple(myTD);
+               	tdGroup.setField(0, key);
+                tdGroup.setField(1, aggset.get(key));
+               	myList.add(tdGroup);
+           	}
+            return new TupleIterator(myTD, myList);    
+        }
+    }
+}

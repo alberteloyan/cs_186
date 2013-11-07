@@ -1,0 +1,107 @@
+package simpledb;
+import java.io.*;
+/**
+ * The delete operator. Delete reads tuples from its child operator and removes
+ * them from the table they belong to.
+ */
+public class Delete extends Operator {
+
+    private static final long serialVersionUID = 1L;
+	private TransactionId tid;
+	private DbIterator dbi;
+	private TupleDesc td;
+	private boolean secondPass = true;
+    /**
+     * Constructor specifying the transaction that this delete belongs to as
+     * well as the child to read from.
+     * 
+     * @param t
+     *            The transaction this delete runs in
+     * @param child
+     *            The child operator from which to read tuples for deletion
+     */
+    public Delete(TransactionId t, DbIterator child) {
+        // some code goes here
+        this.tid = t;
+        this.dbi = child;
+        Type[] fieldtd = new Type[1];
+        fieldtd[0] = Type.INT_TYPE;
+        this.td = new TupleDesc(fieldtd,null);
+    }
+
+    public TupleDesc getTupleDesc() {
+        // some code goes here
+        return this.td;
+    }
+
+    public void open() throws DbException, TransactionAbortedException {
+        // some code goes here
+        secondPass = false;
+        super.open();
+        this.dbi.open();
+    }
+
+    public void close() {
+        // some code goes here
+        super.close();
+        this.dbi.close();
+    }
+
+    public void rewind() throws DbException, TransactionAbortedException {
+        // some code goes here
+        this.dbi.rewind();
+    }
+
+    /**
+     * Deletes tuples as they are read from the child operator. Deletes are
+     * processed via the buffer pool (which can be accessed via the
+     * Database.getBufferPool() method.
+     * 
+     * @return A 1-field tuple containing the number of deleted records.
+     * @see Database#getBufferPool
+     * @see BufferPool#deleteTuple
+     */
+    protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+        // some code goes here
+        //Tuple returnInfo = null;
+        int count = 0;
+        if(secondPass) {
+        	return null;
+        }
+        	
+		while(this.dbi.hasNext()) {
+		    	
+		    	try {
+		    		Database.getBufferPool().deleteTuple(this.tid,this.dbi.next());
+		    	}
+		    	catch(TransactionAbortedException tae) {
+		    		System.out.println("Transaction aborted " + tae.toString());
+		    	}
+		    	catch(DbException dbe) {
+		    		System.out.println("DbException " + dbe.toString());
+		    	}
+		    	
+		    	count++;
+		}
+		    
+		Tuple returnInfo = new Tuple(this.getTupleDesc());
+		Field outputField = new IntField(count);
+		returnInfo.setField(0,outputField);
+		secondPass = true;
+		return returnInfo;
+ 
+    }
+
+    @Override
+    public DbIterator[] getChildren() {
+        // some code goes here
+        return new DbIterator[] {this.dbi};
+    }
+
+    @Override
+    public void setChildren(DbIterator[] children) {
+        // some code goes here
+        this.dbi = children[0];
+    }
+
+}
