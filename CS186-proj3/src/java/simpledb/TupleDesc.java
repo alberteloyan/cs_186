@@ -121,6 +121,9 @@ public class TupleDesc implements Serializable {
      */
     public String getFieldName(int i) throws NoSuchElementException {
         // some code goes here
+        if (i<0 || i>=this.TDArr.size()) {
+            throw new NoSuchElementException("invalid");
+        }
         TDItem wantedTD = this.TDArr.get(i);
         return wantedTD.fieldName;
     }
